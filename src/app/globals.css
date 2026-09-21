@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #10131a;
+  --color-surface: #171b24;
+  --color-surface-raised: #1e2330;
+  --color-line: #262b38;
+  --color-paper: #edeae2;
+  --color-paper-dim: #9aa0ad;
+  --color-amber: #e3a23c;
+  --color-amber-dim: #7a5a2c;
+  --color-teal: #4fc8b8;
+  --color-teal-dim: #2c5f58;
+  --color-clash: #d9584a;
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-display);
+}
+
+::selection {
+  background-color: var(--color-amber);
+  color: var(--color-ink);
+}
+
+* {
+  scrollbar-color: var(--color-line) var(--color-ink);
+}
+
+.font-data {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}

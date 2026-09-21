@@ -1,0 +1,20 @@
+services:
+  database:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: setwise
+      POSTGRES_PASSWORD: setwise
+      POSTGRES_DB: setwise
+    ports:
+      - "5433:5432"
+    volumes:
+      - setwise-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U setwise -d setwise"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  setwise-db:

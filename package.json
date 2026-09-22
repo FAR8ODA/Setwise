@@ -1,7 +1,8 @@
 {
   "name": "setwise",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Harmonic mixing intelligence for DJs, built to show off real SQL.",
   "scripts": {
     "dev": "next dev",
@@ -12,6 +13,7 @@
     "db:migrate": "node --experimental-strip-types scripts/migrate.ts",
     "db:seed": "node --experimental-strip-types scripts/seed.ts",
     "db:seed:generate": "node --experimental-strip-types scripts/generate-seed.ts",
+    "db:queries:generate": "node --experimental-strip-types scripts/generate-query-constants.ts",
     "db:reset": "node --experimental-strip-types scripts/reset.ts",
     "test": "node --experimental-strip-types --test tests/*.test.ts"
   },

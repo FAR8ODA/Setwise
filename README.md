@@ -8,28 +8,35 @@ questions a database is actually good at: which tracks mix cleanly into
 which others, what a set's energy curve looks like transition to
 transition, and whether two bookings collide.
 
-## Project status
-
-Setwise is in its foundation phase. The repository currently contains the
-application shell, tooling, and CI. The schema, query layer, and UI are
-built out incrementally; see the commit history for the sequence.
+**[See the SQL run live →](#the-query-gallery)**
 
 ## Why this project exists
 
 It's a small, deliberately SQL-heavy portfolio piece: recursive CTEs,
-window functions, `LATERAL` joins, relational division, range-type
-exclusion constraints, a materialized view, and an audit trigger, all doing
-real work against real data rather than illustrating a textbook example.
-The `/queries` page in the app is a gallery that runs each technique
-against the live catalog and shows the SQL next to its output.
+window functions, `LATERAL` joins, relational division, a range-type
+`EXCLUDE` constraint, a materialized view, a JSONB audit trigger, and full
+text search, all doing real work against real seeded data rather than
+illustrating a textbook example. See `docs/queries.md` for a walkthrough
+of each one.
 
 ## Tech stack
 
 - Next.js (App Router) and TypeScript
-- PostgreSQL, queried with hand-written parameterized SQL via `pg`
+- PostgreSQL, queried with hand-written parameterized SQL via `pg` (no ORM)
 - Tailwind CSS
 - Docker Compose for local Postgres
-- GitHub Actions for CI
+- GitHub Actions for CI, including a real Postgres service for integration tests
+
+## The app
+
+- **`/catalog`** — full text search and genre filtering over the track catalog.
+- **`/build`** — pick a starting track, then add from `LATERAL`-ranked
+  suggestions. A window-function query replays the growing chain's energy
+  and BPM curve live. Save it and it's a real row, with a real audit trail.
+- **`/sets/[id]`** — a recorded set's full transition analysis, plus its
+  audit history straight out of `set_audit_log`.
+- **`/queries`** — the query gallery. Nine techniques, each with its SQL
+  on the left and live output from the seeded catalog on the right.
 
 ## Local setup
 
@@ -38,22 +45,19 @@ against the live catalog and shows the SQL next to its output.
 - Node.js 22+
 - Docker Desktop or another PostgreSQL 16+ environment
 
-### Install and configure
+### Install, configure, and start Postgres
 
 ```
 npm install
 cp .env.example .env.local
-```
-
-### Start PostgreSQL
-
-```
 docker compose up -d database
 ```
 
-### Start the app
+### Set up the database and start the app
 
 ```
+npm run db:migrate
+npm run db:seed
 npm run dev
 ```
 
@@ -61,14 +65,24 @@ Open http://localhost:3000.
 
 ## Available commands
 
-- `npm run dev` starts the development server
-- `npm run build` creates a production build
-- `npm run start` runs the production build
-- `npm run lint` runs ESLint
-- `npm run typecheck` checks TypeScript without emitting files
+- `npm run dev` / `build` / `start` — the usual Next.js trio
+- `npm run lint` / `typecheck` — ESLint and `tsc --noEmit`
+- `npm test` — integration tests against a real Postgres (see `tests/README.md`)
+- Database commands are documented in `db/README.md`
 
-Database commands (`db:migrate`, `db:seed`, `db:reset`) are documented in
-`db/README.md` once the schema lands.
+## Deploying
+
+Setwise is a stock Next.js app: point it at a managed Postgres (this was
+built and tested against [Neon](https://neon.tech)) and deploy to
+[Vercel](https://vercel.com) or anywhere else that runs Next.js.
+
+1. Create a Postgres database and copy its connection string.
+2. Set `DATABASE_URL` (and `DATABASE_SSL=require` for most hosted
+   providers) in your deployment's environment variables.
+3. Run `npm run db:migrate` and `npm run db:seed` once, pointed at that
+   database, from your machine or a one-off CI job.
+4. Deploy. There's no build-time dependency on the database beyond the
+   generated query constants already checked into the repo.
 
 ## License
 

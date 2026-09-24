@@ -14,7 +14,7 @@ bookings overlap.
 ## What it demonstrates
 
 The database is the center of the application, not just its storage layer.
-Setwise uses hand-written, parameterized SQL through `pg`—there is no ORM.
+Setwise uses hand-written, parameterized SQL through `pg`, there is no ORM.
 
 | PostgreSQL feature | How Setwise uses it |
 | --- | --- |

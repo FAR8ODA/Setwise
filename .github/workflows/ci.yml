@@ -9,6 +9,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Dynamic routes import the database module during Next.js page discovery.
+      # The pg pool connects lazily, so builds only need a valid URL here.
+      DATABASE_URL: postgresql://setwise:setwise@localhost:5432/setwise
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

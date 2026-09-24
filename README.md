@@ -1,94 +1,136 @@
 # Setwise
 
-Harmonic mixing intelligence for DJs, built to put real PostgreSQL to work.
+[![CI](https://github.com/FAR8ODA/Setwise/actions/workflows/ci.yml/badge.svg)](https://github.com/FAR8ODA/Setwise/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Setwise models a DJ's track catalog, the Camelot wheel's key-compatibility
-rules, venue bookings, and historical set performances, then answers
-questions a database is actually good at: which tracks mix cleanly into
-which others, what a set's energy curve looks like transition to
-transition, and whether two bookings collide.
+Setwise is a PostgreSQL-backed DJ set planner built around harmonic mixing.
+It models tracks, Camelot-key compatibility, venue bookings, and performed
+sets, then uses SQL to answer the questions that connect them: what mixes
+cleanly, how a set's energy changes from track to track, and whether two
+bookings overlap.
 
-**[See the SQL run live →](#the-query-gallery)**
+[Read the annotated SQL walkthrough →](docs/queries.md)
 
-## Why this project exists
+## What it demonstrates
 
-It's a small, deliberately SQL-heavy portfolio piece: recursive CTEs,
-window functions, `LATERAL` joins, relational division, a range-type
-`EXCLUDE` constraint, a materialized view, a JSONB audit trigger, and full
-text search, all doing real work against real seeded data rather than
-illustrating a textbook example. See `docs/queries.md` for a walkthrough
-of each one.
+The database is the center of the application, not just its storage layer.
+Setwise uses hand-written, parameterized SQL through `pg`—there is no ORM.
+
+| PostgreSQL feature | How Setwise uses it |
+| --- | --- |
+| Recursive CTE | Builds compatible mix chains without revisiting tracks |
+| `LATERAL` join | Ranks the best next-track suggestions per source track |
+| Window functions | Calculates BPM changes, energy curves, and play percentiles |
+| Relational division | Finds sets containing every track in a requested list |
+| Filtered aggregation | Summarizes transition types in one grouped query |
+| Range exclusion constraint | Prevents overlapping bookings at the same venue |
+| Trigger + JSONB | Records an audit trail for every change to a set |
+| Full-text search | Searches weighted track titles and artist names |
+| Materialized view | Precomputes compatible track pairs for fast reads |
+
+The `/queries` gallery runs eight demonstrations against the seeded database
+and displays the same SQL files used by the application. The compatibility
+materialized view supports those queries and is documented separately in the
+[SQL walkthrough](docs/queries.md).
+
+## Application routes
+
+| Route | Purpose |
+| --- | --- |
+| `/catalog` | Search and filter the track catalog |
+| `/build` | Assemble a set from ranked, compatible suggestions |
+| `/sets` | Browse saved performances |
+| `/sets/[id]` | Inspect transitions and the database audit history |
+| `/queries` | Explore eight SQL techniques with live seeded results |
 
 ## Tech stack
 
-- Next.js (App Router) and TypeScript
-- PostgreSQL, queried with hand-written parameterized SQL via `pg` (no ORM)
+- Next.js App Router, React, and TypeScript
+- PostgreSQL 16 with hand-written SQL via `pg`
 - Tailwind CSS
-- Docker Compose for local Postgres
-- GitHub Actions for CI, including a real Postgres service for integration tests
+- Docker Compose for local PostgreSQL
+- GitHub Actions for linting, type checking, builds, and PostgreSQL integration tests
 
-## The app
-
-- **`/catalog`** — full text search and genre filtering over the track catalog.
-- **`/build`** — pick a starting track, then add from `LATERAL`-ranked
-  suggestions. A window-function query replays the growing chain's energy
-  and BPM curve live. Save it and it's a real row, with a real audit trail.
-- **`/sets/[id]`** — a recorded set's full transition analysis, plus its
-  audit history straight out of `set_audit_log`.
-- **`/queries`** — the query gallery. Nine techniques, each with its SQL
-  on the left and live output from the seeded catalog on the right.
-
-## Local setup
+## Run locally
 
 ### Prerequisites
 
-- Node.js 22+
-- Docker Desktop or another PostgreSQL 16+ environment
+- Node.js 22 or later
+- Docker Desktop, or another PostgreSQL 16+ instance
 
-### Install, configure, and start Postgres
+Install the locked dependencies:
 
+```bash
+npm ci
 ```
-npm install
+
+Copy the example environment file.
+
+macOS or Linux:
+
+```bash
 cp .env.example .env.local
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+Start PostgreSQL, apply the schema, load the deterministic demo data, and
+launch the development server:
+
+```bash
 docker compose up -d database
-```
-
-### Set up the database and start the app
-
-```
 npm run db:migrate
 npm run db:seed
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open [http://localhost:3000](http://localhost:3000). The default local
+connection in `.env.example` points to the Docker service on port `5433`.
 
-## Available commands
+## Commands
 
-- `npm run dev` / `build` / `start` — the usual Next.js trio
-- `npm run lint` / `typecheck` — ESLint and `tsc --noEmit`
-- `npm test` — integration tests against a real Postgres (see `tests/README.md`)
-- Database commands are documented in `db/README.md`
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the development server |
+| `npm run build` | Create a production build |
+| `npm run start` | Run the production build |
+| `npm run lint` | Run ESLint |
+| `npm run typecheck` | Run TypeScript without emitting files |
+| `npm test` | Run integration tests against PostgreSQL |
+| `npm run db:migrate` | Apply pending database migrations |
+| `npm run db:seed` | Load the demo dataset if the catalog is empty |
+| `npm run db:reset` | Recreate, migrate, and seed the local schema |
 
-## Deploying
+See [db/README.md](db/README.md) for the database workflow and
+[tests/README.md](tests/README.md) for integration-test requirements.
 
-Setwise is a stock Next.js app: point it at a managed Postgres (this was
-built and tested against [Neon](https://neon.tech)) and deploy to
-[Vercel](https://vercel.com) or anywhere else that runs Next.js.
+## Continuous integration
 
-1. Create a Postgres database and copy its connection string.
-2. Set `DATABASE_URL` (and `DATABASE_SSL=require` for most hosted
-   providers) in your deployment's environment variables.
-3. Run `npm run db:migrate` and `npm run db:seed` once, pointed at that
-   database, from your machine or a one-off CI job.
-4. Deploy. There's no build-time dependency on the database beyond the
-   generated query constants already checked into the repo.
+The [CI workflow](.github/workflows/ci.yml) runs two independent jobs on
+every push and pull request to `main`:
+
+- `build` installs from the lockfile, lints, type-checks, and builds the app.
+- `database` starts PostgreSQL 16, applies migrations, seeds the database,
+  and runs the integration suite.
+
+## Deployment
+
+Deploy the Next.js application with a PostgreSQL 16+ database and set:
+
+```text
+DATABASE_URL=your-postgres-connection-string
+DATABASE_SSL=require
+```
+
+Use `DATABASE_SSL=require` only when the provider requires TLS. Apply the
+migrations and seed data once before serving the application. Next.js imports
+the database module during its build, so `DATABASE_URL` must also be available
+in the build environment; the database itself is not queried until runtime.
 
 ## License
 
-MIT. See `LICENSE`.
-
-## Ownership
-
-Setwise is an independent portfolio project created and maintained by
-Farbod Alikhanzadeh.
+[MIT](LICENSE) © 2026 Farbod Alikhanzadeh

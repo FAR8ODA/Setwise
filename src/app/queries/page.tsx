@@ -57,7 +57,7 @@ export default async function QueriesPage() {
     <div className="mx-auto max-w-6xl px-6 py-12">
       <h1 className="text-2xl font-semibold tracking-tight">Query gallery</h1>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-paper-dim">
-        Nine techniques, each run live against the seeded catalog when this
+        Eight techniques, each run live against the seeded catalog when this
         page loads. The SQL on the left is read straight out of{" "}
         <code className="font-data">db/queries/</code>, the same files the
         rest of the app calls.
